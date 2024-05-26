@@ -1,0 +1,7 @@
+{
+    "editor.formatOnSave": true,
+    "flake8.args": [
+        "--max-line-length=200",
+        "--ignore=E501,F403,F405"
+    ]
+}
