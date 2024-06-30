@@ -1,6 +1,7 @@
-*/__pycache__/
-.github/
-logs
-build
-dist
+__pycache__/
+.mypy_cache/
+build/
+dist/
+logs/
+output/
 *.spec
