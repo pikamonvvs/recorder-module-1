@@ -1,7 +1,29 @@
 {
-    "editor.formatOnSave": true,
+    // Python Settings
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always",
+            "source.unusedImports": "always",
+            "source.fixAll": "always"
+        }
+    },
+    // Python Formatting (Black)
+    "black-formatter.args": [
+        "--line-length=200"
+    ],
+    // Python Linting (Flake8)
     "flake8.args": [
-        "--max-line-length=200",
-        "--ignore=E501,F403,F405"
+        "--ignore=E501",
+        "--max-line-length=200"
+    ],
+    // Python Type Checking (Mypy)
+    "mypy-type-checker.args": [
+        "--ignore-missing-imports"
+    ],
+    // Python Import Sorting (isort)
+    "isort.args": [
+        "--profile",
+        "black",
     ]
 }

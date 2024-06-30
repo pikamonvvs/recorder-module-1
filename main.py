@@ -1,9 +1,10 @@
-import utils.utils as utils
-from recorders.recorders import *
-
 import asyncio
 
 from loguru import logger
+
+import utils.utils as utils
+from recorders.recorders import *
+from recorders.recorders import recording
 
 
 async def run():
@@ -13,9 +14,7 @@ async def run():
         coroutine = platform(args).start()
         await coroutine
     except (asyncio.CancelledError, KeyboardInterrupt, SystemExit):
-        logger.warning(
-            "The user has interrupted the recording. Closing the live stream."
-        )
+        logger.warning("The user has interrupted the recording. Closing the live stream.")
         for stream_fd, output in recording.copy().values():
             stream_fd.close()
             output.close()

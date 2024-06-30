@@ -12,7 +12,7 @@ import httpx
 import streamlink
 from httpx_socks import AsyncProxyTransport
 from loguru import logger
-from streamlink.stream import StreamIO, HTTPStream
+from streamlink.stream import HTTPStream, StreamIO
 from streamlink_cli.main import open_stream
 from streamlink_cli.output import FileOutput
 from streamlink_cli.streamrunner import StreamRunner
@@ -53,9 +53,7 @@ class LiveRecorder:
                 await self.client.aclose()
                 self.client = self.get_client()
             except Exception as error:
-                logger.exception(
-                    f"{self.flag}Error in live stream detection\n{repr(error)}"
-                )
+                logger.exception(f"{self.flag}Error in live stream detection\n{repr(error)}")
 
     async def run(self):
         pass
@@ -65,17 +63,11 @@ class LiveRecorder:
             response = await self.client.request(method, url, **kwargs)
             return response
         except httpx.ProtocolError as error:
-            raise ConnectionError(
-                f"{self.flag}Protocol error in live stream detection request\n{error}"
-            )
+            raise ConnectionError(f"{self.flag}Protocol error in live stream detection request\n{error}")
         except httpx.HTTPError as error:
-            raise ConnectionError(
-                f"{self.flag}Error in live stream detection request\n{repr(error)}"
-            )
+            raise ConnectionError(f"{self.flag}Error in live stream detection request\n{repr(error)}")
         except anyio.EndOfStream as error:
-            raise ConnectionError(
-                f"{self.flag}Proxy error in live stream detection\n{error}"
-            )
+            raise ConnectionError(f"{self.flag}Proxy error in live stream detection\n{error}")
 
     def get_cookies(self):
         if self.cookies:
@@ -87,9 +79,7 @@ class LiveRecorder:
         client_kwargs = {
             "http2": True,
             "timeout": self.interval,
-            "limits": httpx.Limits(
-                max_keepalive_connections=100, keepalive_expiry=self.interval * 2
-            ),
+            "limits": httpx.Limits(max_keepalive_connections=100, keepalive_expiry=self.interval * 2),
             "headers": self.headers,
             "cookies": self.cookies,
         }
@@ -121,9 +111,7 @@ class LiveRecorder:
         return filename
 
     def get_streamlink(self):
-        session = streamlink.session.Streamlink(
-            {"stream-segment-timeout": 60, "hls-segment-queue-threshold": 10}
-        )
+        session = streamlink.session.Streamlink({"stream-segment-timeout": 60, "hls-segment-queue-threshold": 10})
         # Add streamlink's HTTP related options
         if proxy := self.proxy:
             # If the proxy is socks5, change the streamlink proxy parameter to socks5h to prevent some streams from failing to load
@@ -163,19 +151,11 @@ class LiveRecorder:
             return True
         except Exception as error:
             if "timeout" in str(error):
-                logger.warning(
-                    f"{self.flag}Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{error}"
-                )
-            elif re.search(
-                "(Unable to open URL|No data returned from stream)", str(error)
-            ):
-                logger.warning(
-                    f"{self.flag}Error opening live stream. Please check if the streamer is live: {filename}\n{error}"
-                )
+                logger.warning(f"{self.flag}Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{error}")
+            elif re.search("(Unable to open URL|No data returned from stream)", str(error)):
+                logger.warning(f"{self.flag}Error opening live stream. Please check if the streamer is live: {filename}\n{error}")
             else:
-                logger.exception(
-                    f"{self.flag}Error recording live stream: {filename}\n{error}"
-                )
+                logger.exception(f"{self.flag}Error recording live stream: {filename}\n{error}")
         finally:
             output.close()
 
@@ -216,7 +196,5 @@ class Afreeca(LiveRecorder):
             ).json()
             if response["CHANNEL"]["RESULT"] != 0:
                 title = response["CHANNEL"]["TITLE"]
-                stream = (
-                    self.get_streamlink().streams(url).get("best")
-                )  # HLSStream[mpegts]
+                stream = self.get_streamlink().streams(url).get("best")  # HLSStream[mpegts]
                 await asyncio.to_thread(self.run_record, stream, url, title, "ts")
