@@ -1,3 +1,6 @@
 */__pycache__/
 .github/
 logs
+build
+dist
+*.spec
