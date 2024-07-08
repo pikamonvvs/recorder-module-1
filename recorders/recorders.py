@@ -11,11 +11,12 @@ import ffmpeg
 import httpx
 import streamlink
 from httpx_socks import AsyncProxyTransport
-from loguru import logger
 from streamlink.stream import HTTPStream, StreamIO
 from streamlink_cli.main import open_stream
 from streamlink_cli.output import FileOutput
 from streamlink_cli.streamrunner import StreamRunner
+
+from utils.utils import logutil
 
 DEFAULT_INTERVAL = 10
 DEFAULT_HEADERS = {"User-Agent": "Chrome"}
@@ -42,18 +43,18 @@ class LiveRecorder:
         self.client = self.get_client()
 
     async def start(self):
-        logger.info(f"{self.flag}Checking live stream status")
+        logutil.info(self.flag, "Checking live stream status")
         while True:
             try:
                 await self.run()
                 await asyncio.sleep(self.interval)
             except ConnectionError as error:
                 if "Protocol error in live stream detection request" not in str(error):
-                    logger.error(error)
+                    logutil.error(self.flag, error)
                 await self.client.aclose()
                 self.client = self.get_client()
             except Exception as error:
-                logger.exception(f"{self.flag}Error in live stream detection\n{repr(error)}")
+                logutil.error(self.flag, f"Error in live stream detection\n{repr(error)}")
 
     async def run(self):
         pass
@@ -128,39 +129,39 @@ class LiveRecorder:
         # Get the output filename
         filename = self.get_filename(title, format)
         if stream:
-            logger.info(f"{self.flag}Started recording: {filename}")
+            logutil.info(self.flag, f"Started recording: {filename}")
             # Call streamlink to record the live stream
             result = self.stream_writer(stream, url, filename)
             # If recording is successful and format is specified and not equal to the default platform format, run ffmpeg
             if result and self.format and self.format != format:
                 self.run_ffmpeg(filename, format)
             recording.pop(url, None)
-            logger.info(f"{self.flag}Stopped recording: {filename}")
+            logutil.info(self.flag, f"Stopped recording: {filename}")
         else:
-            logger.error(f"{self.flag}No available live stream: {filename}")
+            logutil.error(self.flag, f"No available live stream: {filename}")
 
     def stream_writer(self, stream, url, filename):
-        logger.info(f"{self.flag}Obtained live stream link: {filename}\n{stream.url}")
+        logutil.info(self.flag, f"Obtained live stream link: {filename}\n{stream.url}")
         output = FileOutput(Path(f"{self.output}/{filename}"))
         try:
             stream_fd, prebuffer = open_stream(stream)
             output.open()
             recording[url] = (stream_fd, output)
-            logger.info(f"{self.flag}Recording in progress: {filename}")
+            logutil.info(self.flag, f"Recording in progress: {filename}")
             StreamRunner(stream_fd, output, show_progress=True).run(prebuffer)
             return True
         except Exception as error:
             if "timeout" in str(error):
-                logger.warning(f"{self.flag}Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{error}")
+                logutil.warning(self.flag, f"Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{error}")
             elif re.search("(Unable to open URL|No data returned from stream)", str(error)):
-                logger.warning(f"{self.flag}Error opening live stream. Please check if the streamer is live: {filename}\n{error}")
+                logutil.warning(self.flag, f"Error opening live stream. Please check if the streamer is live: {filename}\n{error}")
             else:
-                logger.exception(f"{self.flag}Error recording live stream: {filename}\n{error}")
+                logutil.error(self.flag, f"Error recording live stream: {filename}\n{error}")
         finally:
             output.close()
 
     def run_ffmpeg(self, filename, format):
-        logger.info(f"{self.flag}Starting ffmpeg processing: {filename}")
+        logutil.info(self.flag, f"Starting ffmpeg processing: {filename}")
         new_filename = filename.replace(f".{format}", f".{self.format}")
         ffmpeg.input(f"{self.output}/{filename}").output(
             f"{self.output}/{new_filename}",
@@ -171,16 +172,16 @@ class LiveRecorder:
         os.remove(f"{self.output}/{filename}")
 
     def print_info(self):
-        logger.info(f"Platform: {self.platform}")
-        logger.info(f"ID: {self.id}")
-        logger.info(f"Name: {self.name}")
-        logger.info(f"Interval: {self.interval}")
-        logger.info(f"Headers: {self.headers}")
-        logger.info(f"Cookies: {self.cookies}")
-        logger.info(f"Format: {self.format}")
-        logger.info(f"Proxy: {self.proxy}")
-        logger.info(f"Output: {self.output}")
-        logger.info(f"Client: {self.client}")
+        logutil.info(f"Platform: {self.platform}")
+        logutil.info(f"ID: {self.id}")
+        logutil.info(f"Name: {self.name}")
+        logutil.info(f"Interval: {self.interval}")
+        logutil.info(f"Headers: {self.headers}")
+        logutil.info(f"Cookies: {self.cookies}")
+        logutil.info(f"Format: {self.format}")
+        logutil.info(f"Proxy: {self.proxy}")
+        logutil.info(f"Output: {self.output}")
+        logutil.info(f"Client: {self.client}")
 
 
 class Afreeca(LiveRecorder):
