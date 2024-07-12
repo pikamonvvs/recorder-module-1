@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform", "inherit_metadata"]
 lock_version = "4.4.2"
-content_hash = "sha256:2165a91b2fcc047fb83c219d60e5df72eb89a717eddb27182af3f9640d7b0d47"
+content_hash = "sha256:f26641fdcc021ce1b24d3160e1703e479602689c7c7705bf5c32ffb232c0f15a"
 
 [[package]]
 name = "altgraph"

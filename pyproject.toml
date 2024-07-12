@@ -11,13 +11,13 @@ authors = [
     {name = "pikamonvvs", email = "pikamonvvs@naver.com"},
 ]
 dependencies = [
-    "anyio<5.0.0,>=4.4.0",
-    "ffmpeg-python<1.0.0,>=0.2.0",
-    "httpx<1.0.0,>=0.27.0",
-    "h2<5.0.0,>=4.1.0",
-    "streamlink<7.0.0,>=6.8.1",
-    "httpx-socks<1.0.0,>=0.9.1",
-    "loguru<1.0.0,>=0.7.2",
+    "anyio>=4.4.0",
+    "ffmpeg-python>=0.2.0",
+    "httpx>=0.27.0",
+    "h2>=4.1.0",
+    "streamlink>=6.8.3",
+    "httpx-socks>=0.9.1",
+    "loguru>=0.7.2",
     "pyinstaller>=6.9.0",
 ]
 requires-python = "<3.13,>=3.12"
