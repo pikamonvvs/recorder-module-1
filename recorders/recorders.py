@@ -11,6 +11,7 @@ import ffmpeg
 import httpx
 import streamlink
 from httpx_socks import AsyncProxyTransport
+from streamlink import NoPluginError
 from streamlink.stream import HTTPStream, StreamIO
 from streamlink_cli.main import open_stream
 from streamlink_cli.output import FileOutput
@@ -53,6 +54,8 @@ class LiveRecorder:
                     logutil.error(self.flag, error)
                 await self.client.aclose()
                 self.client = self.get_client()
+            except NoPluginError as error:
+                logutil.error(self.flag, f"NoPluginError: {repr(error)}")
             except Exception as error:
                 logutil.error(self.flag, f"Error in live stream detection\n{repr(error)}")
 

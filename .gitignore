@@ -4,4 +4,3 @@ build/
 dist/
 logs/
 output/
-*.spec
