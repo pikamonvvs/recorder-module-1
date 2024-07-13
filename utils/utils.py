@@ -45,7 +45,7 @@ class Logger:
         # logger.add("logs/llog_general.txt", rotation="10MB", retention="10 days")
         # logger.add("logs/llog_info.txt", rotation="10MB", retention="10 days", level="INFO")
         # logger.add("logs/llog_warning.txt", rotation="10MB", retention="10 days", level="WARNING")
-        logger.add("logs/log_error.log", rotation="10MB", retention="10 days", level="ERROR")
+        # logger.add("logs/log_error.log", rotation="10MB", retention="10 days", level="ERROR")
 
     def debug(self, *args):
         message = " ".join(str(arg) for arg in args)
