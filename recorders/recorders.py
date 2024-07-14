@@ -22,6 +22,7 @@ from utils.utils import logutil
 DEFAULT_INTERVAL = 10
 DEFAULT_HEADERS = {"User-Agent": "Chrome"}
 DEFAULT_OUTPUT = "output"
+DEFAULT_FORMAT = "ts"
 
 recording: Dict[str, Tuple[StreamIO, FileOutput]] = {}
 
@@ -36,7 +37,7 @@ class LiveRecorder:
         self.interval = user.get("interval", DEFAULT_INTERVAL)
         self.headers = user.get("headers", DEFAULT_HEADERS)
         self.cookies = user.get("cookies")
-        self.format = user.get("format")
+        self.format = user.get("format", DEFAULT_FORMAT)
         self.proxy = user.get("proxy")
         self.output = user.get("output", DEFAULT_OUTPUT)
 
@@ -44,6 +45,8 @@ class LiveRecorder:
         self.client = self.get_client()
 
     async def start(self):
+        self.print_info()
+
         logutil.info(self.flag, "Checking live stream status")
         while True:
             try:
@@ -73,9 +76,16 @@ class LiveRecorder:
         except anyio.EndOfStream as error:
             raise ConnectionError(f"{self.flag}Proxy error in live stream detection\n{error}")
 
+    def is_file(self, file_path):
+        return os.path.isfile(file_path)
+
     def get_cookies(self):
+        logutil.info(self.flag, "self.cookies: ", self.cookies)
         if self.cookies:
             cookies = SimpleCookie()
+            if self.is_file(self.cookies):
+                self.cookies = open(self.cookies, "r").read().strip()
+                logutil.info(self.flag, "self.cookies: ", self.cookies)
             cookies.load(self.cookies)
             self.cookies = {k: v.value for k, v in cookies.items()}
 
@@ -175,16 +185,17 @@ class LiveRecorder:
         os.remove(f"{self.output}/{filename}")
 
     def print_info(self):
-        logutil.info(f"Platform: {self.platform}")
-        logutil.info(f"ID: {self.id}")
-        logutil.info(f"Name: {self.name}")
-        logutil.info(f"Interval: {self.interval}")
-        logutil.info(f"Headers: {self.headers}")
-        logutil.info(f"Cookies: {self.cookies}")
-        logutil.info(f"Format: {self.format}")
-        logutil.info(f"Proxy: {self.proxy}")
-        logutil.info(f"Output: {self.output}")
-        logutil.info(f"Client: {self.client}")
+        logutil.info(self.flag, "=============================")
+        logutil.info(self.flag, f"platform: {self.platform}")
+        logutil.info(self.flag, f"id: {self.id}")
+        logutil.info(self.flag, f"name: {self.name}")
+        logutil.info(self.flag, f"interval: {self.interval}")
+        logutil.info(self.flag, f"headers: {self.headers}")
+        logutil.info(self.flag, f"cookies: {self.cookies}")
+        logutil.info(self.flag, f"format: {self.format}")
+        logutil.info(self.flag, f"proxy: {self.proxy}")
+        logutil.info(self.flag, f"output: {self.output}")
+        logutil.info(self.flag, "=============================")
 
 
 class Afreeca(LiveRecorder):
@@ -201,4 +212,4 @@ class Afreeca(LiveRecorder):
             if response["CHANNEL"]["RESULT"] != 0:
                 title = response["CHANNEL"]["TITLE"]
                 stream = self.get_streamlink().streams(url).get("best")  # HLSStream[mpegts]
-                await asyncio.to_thread(self.run_record, stream, url, title, "ts")
+                await asyncio.to_thread(self.run_record, stream, url, title, self.format)
