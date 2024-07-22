@@ -11,7 +11,7 @@ import ffmpeg
 import httpx
 import streamlink
 from httpx_socks import AsyncProxyTransport
-from streamlink import NoPluginError
+from streamlink import NoPluginError, PluginError
 from streamlink.stream import HTTPStream, StreamIO
 from streamlink_cli.main import open_stream
 from streamlink_cli.output import FileOutput
@@ -52,15 +52,19 @@ class LiveRecorder:
             try:
                 await self.run()
                 await asyncio.sleep(self.interval)
-            except ConnectionError as error:
-                if "Protocol error in live stream detection request" not in str(error):
-                    logutil.error(self.flag, error)
+            except ConnectionError as e:
+                if "Protocol error in live stream detection request" not in str(e):
+                    logutil.error(self.flag, e)
                 await self.client.aclose()
                 self.client = self.get_client()
-            except NoPluginError as error:
-                logutil.error(self.flag, f"NoPluginError: {repr(error)}")
-            except Exception as error:
-                logutil.error(self.flag, f"Error in live stream detection\n{repr(error)}")
+            except PluginError as e:
+                logutil.error(self.flag, f"Streamlink plugin error: {e}")
+            except NoPluginError as e:
+                logutil.error(self.flag, f"NoPluginError: {e}")
+            except PermissionError as e:
+                logutil.error(self.flag, f"Permission error: {e}")
+            except Exception as e:
+                logutil.error(self.flag, f"Error in live stream detection: {e}")
 
     async def run(self):
         pass
@@ -69,12 +73,12 @@ class LiveRecorder:
         try:
             response = await self.client.request(method, url, **kwargs)
             return response
-        except httpx.ProtocolError as error:
-            raise ConnectionError(f"{self.flag}Protocol error in live stream detection request\n{error}")
-        except httpx.HTTPError as error:
-            raise ConnectionError(f"{self.flag}Error in live stream detection request\n{repr(error)}")
-        except anyio.EndOfStream as error:
-            raise ConnectionError(f"{self.flag}Proxy error in live stream detection\n{error}")
+        except httpx.ProtocolError as e:
+            raise ConnectionError(f"Protocol error in live stream detection request: {e}")
+        except httpx.HTTPError as e:
+            raise ConnectionError(f"Error in live stream detection request: {e}")
+        except anyio.EndOfStream as e:
+            raise ConnectionError(f"Proxy error in live stream detection: {e}")
 
     def is_file(self, file_path):
         return os.path.isfile(file_path)
@@ -163,13 +167,13 @@ class LiveRecorder:
             logutil.info(self.flag, f"Recording in progress: {filename}")
             StreamRunner(stream_fd, output, show_progress=True).run(prebuffer)
             return True
-        except Exception as error:
-            if "timeout" in str(error):
-                logutil.warning(self.flag, f"Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{error}")
-            elif re.search("(Unable to open URL|No data returned from stream)", str(error)):
-                logutil.warning(self.flag, f"Error opening live stream. Please check if the streamer is live: {filename}\n{error}")
+        except Exception as e:
+            if "timeout" in str(e):
+                logutil.warning(self.flag, f"Live stream recording timeout. Please check if the streamer is live or if the network connection is stable: {filename}\n{e}")
+            elif re.search("(Unable to open URL|No data returned from stream)", str(e)):
+                logutil.warning(self.flag, f"Error opening live stream. Please check if the streamer is live: {filename}\n{e}")
             else:
-                logutil.error(self.flag, f"Error recording live stream: {filename}\n{error}")
+                logutil.error(self.flag, f"Error recording live stream: {filename}\n{e}")
         finally:
             output.close()
 
