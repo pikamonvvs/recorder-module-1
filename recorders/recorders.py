@@ -6,11 +6,13 @@ from http.cookies import SimpleCookie
 from pathlib import Path
 from typing import Dict, Tuple, Union
 
-import anyio
 import ffmpeg
 import httpx
 import streamlink
+from anyio import EndOfStream
+from httpx import HTTPError, ProtocolError
 from httpx_socks import AsyncProxyTransport
+from requests.exceptions import ConnectionError, SSLError
 from streamlink import NoPluginError, PluginError
 from streamlink.stream import HTTPStream, StreamIO
 from streamlink_cli.main import open_stream
@@ -52,9 +54,8 @@ class LiveRecorder:
             try:
                 await self.run()
                 await asyncio.sleep(self.interval)
-            except ConnectionError as e:
-                if "Protocol error in live stream detection request" not in str(e):
-                    logutil.error(self.flag, e)
+            except (ConnectionError, HTTPError, EndOfStream) as e:
+                logutil.error(self.flag, e)
                 await self.client.aclose()
                 self.client = self.get_client()
             except PluginError as e:
@@ -73,12 +74,24 @@ class LiveRecorder:
         try:
             response = await self.client.request(method, url, **kwargs)
             return response
-        except httpx.ProtocolError as e:
-            raise ConnectionError(f"Protocol error in live stream detection request: {e}")
-        except httpx.HTTPError as e:
-            raise ConnectionError(f"Error in live stream detection request: {e}")
-        except anyio.EndOfStream as e:
-            raise ConnectionError(f"Proxy error in live stream detection: {e}")
+        except ProtocolError as e:
+            logutil.error(self.flag, f"Protocol error: {e}")
+            raise e
+        except HTTPError as e:
+            logutil.error(self.flag, f"HTTP error: {e}")
+            raise e
+        except EndOfStream as e:
+            logutil.error(self.flag, f"End of stream: {e}")
+            raise e
+        except SSLError as e:
+            logutil.error(self.flag, f"SSL error: {e}")
+            raise e
+        except ConnectionError as e:
+            logutil.error(self.flag, f"Connection error: {e}")
+            raise e
+        except Exception as e:
+            logutil.error(self.flag, f"Unexpected error: {e}")
+            raise e
 
     def is_file(self, file_path):
         return os.path.isfile(file_path)
@@ -205,15 +218,18 @@ class LiveRecorder:
 class Afreeca(LiveRecorder):
     async def run(self):
         url = f"https://play.afreecatv.com/{self.id}"
-        if url not in recording:
-            response = (
-                await self.request(
-                    method="POST",
-                    url="https://live.afreecatv.com/afreeca/player_live_api.php",
-                    data={"bid": self.id},
-                )
-            ).json()
-            if response["CHANNEL"]["RESULT"] != 0:
-                title = response["CHANNEL"]["TITLE"]
-                stream = self.get_streamlink().streams(url).get("best")  # HLSStream[mpegts]
-                await asyncio.to_thread(self.run_record, stream, url, title, self.format)
+        try:
+            if url not in recording:
+                response = (
+                    await self.request(
+                        method="POST",
+                        url="https://live.afreecatv.com/afreeca/player_live_api.php",
+                        data={"bid": self.id},
+                    )
+                ).json()
+                if response["CHANNEL"]["RESULT"] != 0:
+                    title = response["CHANNEL"]["TITLE"]
+                    stream = self.get_streamlink().streams(url).get("best")  # HLSStream[mpegts]
+                    await asyncio.to_thread(self.run_record, stream, url, title, self.format)
+        except Exception as e:
+            raise e
