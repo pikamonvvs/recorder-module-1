@@ -54,18 +54,23 @@ class LiveRecorder:
             try:
                 await self.run()
                 await asyncio.sleep(self.interval)
-            except (ConnectionError, HTTPError, EndOfStream) as e:
+            except (ConnectionError, HTTPError, SSLError, EndOfStream) as e:
                 logutil.error(self.flag, e)
                 await self.client.aclose()
                 self.client = self.get_client()
+                await asyncio.sleep(self.interval)
             except PluginError as e:
                 logutil.error(self.flag, f"Streamlink plugin error: {e}")
+                await asyncio.sleep(self.interval)
             except NoPluginError as e:
                 logutil.error(self.flag, f"NoPluginError: {e}")
+                await asyncio.sleep(self.interval)
             except PermissionError as e:
                 logutil.error(self.flag, f"Permission error: {e}")
+                await asyncio.sleep(self.interval)
             except Exception as e:
                 logutil.error(self.flag, f"Error in live stream detection: {e}")
+                await asyncio.sleep(self.interval)
 
     async def run(self):
         pass
